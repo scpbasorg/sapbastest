@@ -3,7 +3,7 @@
 https://github.com/scpbasorg/sapbastest.git
 
 -- 최초
-cd roo 폴더이동
+cd root 폴더이동
 git init
 git add README.MD
 git commit -m "first commit"
