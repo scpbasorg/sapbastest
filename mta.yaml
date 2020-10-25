@@ -1,0 +1,127 @@
+_schema-version: "3.1"
+ID: DemoEdu
+description: DemoEdu application
+version: 1.0.0
+modules:
+- name: DemoEdu-srv
+  type: java
+  path: srv
+  requires:
+  - name: DemoEdu-db
+    properties:
+      SPRING_PROFILES_ACTIVE: cloud
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  build-parameters:
+    build-result: target/*.[wj]ar
+    builder: custom
+    commands:
+    - mvn clean package
+- name: DemoEdu-db-deployer
+  type: hdb
+  path: db
+  requires:
+  - name: DemoEdu-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: DemoEdu-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: uaa_DemoEdu
+    parameters:
+      service-key:
+        name: uaa_DemoEdu-key
+  - name: DemoEdu_html_repo_host
+    parameters:
+      service-key:
+        name: DemoEdu_html_repo_host-key
+  - name: DemoEdu-destination-service
+    parameters:
+      content-target: true
+  parameters:
+    content:
+      subaccount:
+        destinations:
+        - Name: com_mdpert_test_DemoEdu_html_repo_host
+          ServiceInstanceName: DemoEdu-html5-app-host-service
+          ServiceKeyName: DemoEdu_html_repo_host-key
+          sap.cloud.service: com.mdpert.test
+        - Authentication: OAuth2UserTokenExchange
+          Name: com_mdpert_test_uaa_DemoEdu
+          ServiceInstanceName: DemoEdu-xsuaa-service
+          ServiceKeyName: uaa_DemoEdu-key
+          sap.cloud.service: com.mdpert.test
+        existing_destinations_policy: update
+  build-parameters:
+    no-source: true
+- name: DemoEdu_ui_deployer
+  type: com.sap.application.content
+  path: app
+  requires:
+  - name: DemoEdu_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - TestModule-content.zip
+      name: TestModule
+      target-path: resources/
+- name: TestModule
+  type: html5
+  path: app/TestModule
+  build-parameters:
+    builder: custom
+    commands:
+    - npm run build
+    supported-platforms: []
+resources:
+- name: DemoEdu-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+  properties:
+    hdi-service-name: ${service-name}
+- name: DemoEdu-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      init_data:
+        subaccount:
+          destinations:
+          - Authentication: NoAuthentication
+            HTML5.ForwardAuthToken: true
+            Name: srv-api
+            ProxyType: Internet
+            Type: HTTP
+            URL: ~{srv-api/srv-url}
+          existing_destinations_policy: update
+    service: destination
+    service-name: DemoEdu-destination-service
+    service-plan: lite
+  requires:
+  - name: srv-api
+- name: DemoEdu_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: DemoEdu-html5-app-host-service
+    service-plan: app-host
+- name: uaa_DemoEdu
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: DemoEdu-xsuaa-service
+    service-plan: application
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm install
