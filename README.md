@@ -20,3 +20,8 @@ git checkout -b feature_x
 git checkout master
 git branch -d feature_x
 git push origin 브랜치명
+
+--주석
+1번째 줄 : 커밋 내의 변경 내용을 요약
+2번째 줄 : 빈 칸
+3번째 줄 : 변경한 이유
