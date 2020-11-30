@@ -38,3 +38,10 @@ git commit --m "blabla..."
 git remote add origin(최초는 통상적으로 origin)
 git remote
 git push origin master(id/pw)
+
+-- rollback
+#git reset --hard [commit version]
+#git revert --no-commit [commit version] : 단계별로 하나씩 revert
+#git push origin master
+
+#git push -f origin master == 주의 모든 내용이 다 원복됨(개인 사용 시)
